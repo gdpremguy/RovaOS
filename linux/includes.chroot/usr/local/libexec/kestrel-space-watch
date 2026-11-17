@@ -1,0 +1,17 @@
+#!/usr/bin/python3
+"""One notification per low-space episode; idle between 60-second checks."""
+import subprocess
+import sys
+import time
+sys.path.insert(0, '/usr/local/lib/kestrel')
+from session import session_status
+from desktop import status_module
+warned = False
+while True:
+    status = status_module(session_status())
+    low = status['class'] == 'low-space'
+    if low and not warned:
+        subprocess.run(['notify-send', '-u', 'critical', 'Rova USB save space is low',
+                        'Export important files and free space. Open Settings → Saving & backup.'], check=False)
+    warned = low
+    time.sleep(60)

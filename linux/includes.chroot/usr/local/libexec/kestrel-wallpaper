@@ -1,0 +1,7 @@
+#!/usr/bin/python3
+import os
+import pathlib
+image = pathlib.Path.home()/'.local/share/kestrel/wallpaper.png'
+if not image.is_file():
+    image = pathlib.Path('/usr/share/backgrounds/rova/rova-horizon.png')
+os.execvp('swaybg', ['swaybg', '-i', str(image), '-m', 'fill'])

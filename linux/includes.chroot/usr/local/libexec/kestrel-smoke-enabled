@@ -1,0 +1,4 @@
+#!/bin/sh
+# Only the explicitly labelled test VM opts in. Real laptop boots do nothing.
+test "$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null)" = KestrelOS-Test &&
+test "$(cat /sys/class/dmi/id/product_name 2>/dev/null)" = KestrelOS-Network-Smoke

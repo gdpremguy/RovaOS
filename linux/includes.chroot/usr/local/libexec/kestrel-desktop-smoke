@@ -1,0 +1,88 @@
+#!/usr/bin/python3
+"""Only called by the DMI-gated smoke reporter, inside its disposable VM."""
+import base64
+import json
+import os
+import pathlib
+import subprocess
+import sys
+import time
+sys.path.insert(0, '/usr/local/lib/kestrel')
+from experience import load_content
+
+
+def msg(*args):
+    return json.loads(subprocess.check_output(['niri', 'msg', '--json', *args], text=True))
+
+
+def wait_for(check, timeout=45):
+    start = time.monotonic()
+    while time.monotonic() - start < timeout:
+        value = check()
+        if value:
+            return value
+        time.sleep(.5)
+    raise RuntimeError('Desktop check timed out')
+
+
+def windows(title):
+    return [w for w in msg('windows') if w.get('title') == title]
+
+
+def capture(name):
+    # IPC desired sizes can precede client buffer commits on a TCG guest.
+    time.sleep(2)
+    path = pathlib.Path('/run/user/1000')/(name+'.png')
+    subprocess.run(['niri', 'msg', 'action', 'screenshot-screen', '--path', str(path)], check=True)
+    wait_for(lambda: path.is_file() and path.stat().st_size > 100)
+    png = path.read_bytes()
+    assert png.startswith(b'\x89PNG\r\n\x1a\n')
+    print('KESTREL_'+name.upper()+'_PNG_BASE64='+base64.b64encode(png).decode(), flush=True)
+
+
+assert pathlib.Path('/sys/class/dmi/id/sys_vendor').read_text().strip() == 'KestrelOS-Test'
+children = []
+center_title = load_content()[0]['control_center_title']
+try:
+    # The reporter owns a runuser wrapper, not necessarily the GTK process.
+    # Close its test window through the compositor before measuring tiling.
+    for window in windows(center_title):
+        subprocess.run(['niri', 'msg', 'action', 'close-window', '--id', str(window['id'])], check=True)
+    wait_for(lambda: not windows(center_title))
+    wait_for(lambda: subprocess.run(['pgrep', '-x', 'waybar'], capture_output=True, text=True).stdout.splitlines())
+    assert len(subprocess.check_output(['pgrep', '-x', 'waybar'], text=True).splitlines()) == 1, 'Duplicate Waybar'
+    first = subprocess.Popen(['foot', '--title=Kestrel Smoke One', 'sleep', '180']);children.append(first)
+    one = wait_for(lambda: windows('Kestrel Smoke One'))[0]
+    output = next(o for o in msg('outputs').values() if o.get('current_mode') is not None)
+    width = output['logical']['width']
+    wait_for(lambda: windows('Kestrel Smoke One')[0]['layout']['tile_size'][0] > width*.85)
+    second = subprocess.Popen(['foot', '--title=Kestrel Smoke Two', 'sleep', '180']);children.append(second)
+    wait_for(lambda: windows('Kestrel Smoke Two'))
+    wait_for(lambda: all(width*.35 < windows(title)[0]['layout']['tile_size'][0] < width*.62
+                         for title in ('Kestrel Smoke One', 'Kestrel Smoke Two')))
+    capture('tiling')
+    subprocess.run(['niri', 'msg', 'action', 'close-window', '--id', str(windows('Kestrel Smoke Two')[0]['id'])], check=True)
+    wait_for(lambda: not windows('Kestrel Smoke Two'))
+    wait_for(lambda: windows('Kestrel Smoke One')[0]['layout']['tile_size'][0] > width*.85)
+    for page in ('quick', 'storage', 'welcome', 'backup', 'recovery', 'wallpaper', 'power'):
+        title = 'Rova Quick Settings' if page == 'quick' else 'Rova Tools · '+page.title()
+        process = subprocess.Popen(['kestrel-tools', page]);children.append(process)
+        window = wait_for(lambda: windows(title))[0]
+        assert window['is_floating'], title+' did not float'
+        if page == 'quick':
+            capture('quick')
+        subprocess.run(['niri', 'msg', 'action', 'close-window', '--id', str(window['id'])], check=True)
+        wait_for(lambda: not windows(title))
+    print('KESTREL_DESKTOP_FEATURES_PASS', flush=True)
+except Exception:
+    print('KESTREL_DESKTOP_FAILURE_WINDOWS='+json.dumps(msg('windows')), flush=True)
+    subprocess.run(['journalctl', '--user', '-b', '--no-pager', '-n', '80'], check=False)
+    raise
+finally:
+    for process in children:
+        if process.poll() is None:
+            process.terminate()
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            process.kill();process.wait()

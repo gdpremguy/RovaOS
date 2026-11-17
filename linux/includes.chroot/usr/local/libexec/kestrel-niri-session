@@ -1,0 +1,18 @@
+#!/usr/bin/python3
+"""Recovery boots ignore saved Niri configuration, without deleting it."""
+import os
+import pathlib
+import shutil
+
+# Import the theme into systemd/D-Bus as well as compositor-spawned programs.
+os.environ.setdefault('GTK_THEME', 'Rova-Summit')
+os.environ.setdefault('MOZ_ENABLE_WAYLAND', '1')
+
+if 'kestrel.recovery' in pathlib.Path('/proc/cmdline').read_text().split():
+    runtime = pathlib.Path(os.environ['XDG_RUNTIME_DIR'])/'kestrel-recovery'
+    runtime.mkdir(mode=0o700, exist_ok=True)
+    config = runtime/'niri'
+    if not config.exists():
+        shutil.copytree('/usr/share/rova/defaults/niri', config)
+    os.environ['NIRI_CONFIG'] = str(config/'config.kdl')
+os.execvp('niri-session', ['niri-session'])

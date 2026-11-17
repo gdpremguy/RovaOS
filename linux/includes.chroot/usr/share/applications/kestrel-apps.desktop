@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Rova Apps
+Exec=rova-apps
+Icon=kestrel
+Categories=Utility;
+Terminal=false

@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Rova default display scaling
+Exec=/usr/local/libexec/kestrel-display-default
+OnlyShowIn=XFCE;
+X-GNOME-Autostart-enabled=true

@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Rova desktop first-login setup
+Exec=/usr/local/libexec/kestrel-desktop-init
+OnlyShowIn=XFCE;
+X-GNOME-Autostart-enabled=true

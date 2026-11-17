@@ -1,0 +1,12 @@
+[Unit]
+Description=Opt-in disposable VM boot-USB first-boot preparation test
+After=local-fs.target kestrel-session-state.service
+
+[Service]
+Type=oneshot
+ExecCondition=/usr/local/libexec/kestrel-firstboot-smoke-enabled
+ExecStart=/usr/local/libexec/kestrel-firstboot-smoke
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

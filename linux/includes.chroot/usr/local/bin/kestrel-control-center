@@ -1,0 +1,102 @@
+#!/usr/bin/python3
+"""Rova Settings, driven by shared desktop content."""
+import pathlib
+import os
+import subprocess
+import sys
+sys.path.insert(0, '/usr/local/lib/kestrel')
+from session import session_status
+from experience import desktop_profile, for_profile, load_content, shortcut_text
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk, Gdk, GLib
+
+
+class ControlCenter(Gtk.Window):
+    def __init__(self):
+        brand, settings, shortcuts = load_content()
+        profile = desktop_profile()
+        super().__init__(title=brand['control_center_title'])
+        self.get_style_context().add_class('kestrel-control')
+        screen = Gdk.Screen.get_default()
+        self.set_default_size(min(820, screen.get_width()-48), min(630, screen.get_height()-80))
+        self.set_position(Gtk.WindowPosition.CENTER)
+        self.connect('destroy', Gtk.main_quit)
+        root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=18, margin=28)
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroll.add(root)
+        self.add(scroll)
+        header = Gtk.Box(spacing=18)
+        header.pack_start(Gtk.Image.new_from_icon_name('kestrel', Gtk.IconSize.DIALOG), False, False, 0)
+        titles = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+        eyebrow = Gtk.Label(label=brand['eyebrow'], xalign=0)
+        eyebrow.get_style_context().add_class('kestrel-eyebrow')
+        titles.pack_start(eyebrow, False, False, 0)
+        title = Gtk.Label(xalign=0)
+        title.set_markup('<span size="24000" weight="bold">'+GLib.markup_escape_text(brand['headline'])+'</span>')
+        title.set_line_wrap(True)
+        titles.pack_start(title, False, False, 0)
+        subtitle = Gtk.Label(label=brand['subtitle'], xalign=0)
+        subtitle.set_line_wrap(True)
+        subtitle.get_style_context().add_class('kestrel-subtitle')
+        titles.pack_start(subtitle, False, False, 0)
+        header.pack_start(titles, True, True, 0);root.pack_start(header, False, False, 0)
+        status = session_status()
+        storage = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        storage.get_style_context().add_class('kestrel-storage')
+        label = Gtk.Label(label=status['description'], xalign=0);label.set_line_wrap(True)
+        storage.pack_start(label, False, False, 0)
+        detail = (f"{status['free_bytes']/2**30:.1f} GiB free. Wi-Fi credentials and browser data are stored on this unencrypted USB."
+                  if status['persistent'] else 'This session is temporary. Use USB saving setup below, then restart to retain settings and files.')
+        label = Gtk.Label(label=detail, xalign=0);label.set_line_wrap(True);storage.pack_start(label, False, False, 0)
+        root.pack_start(storage, False, False, 0)
+        if status['persistent'] and status.get('total_bytes'):
+            meter = Gtk.ProgressBar()
+            meter.set_fraction(max(0, min(1, 1-status['free_bytes']/status['total_bytes'])))
+            meter.set_show_text(True);meter.set_text('USB save space used')
+            storage.pack_start(meter, False, False, 0)
+        grid = Gtk.Grid(column_spacing=12, row_spacing=12, column_homogeneous=True)
+        niri = profile == 'niri'
+        columns = settings['columns']
+        for index, action in enumerate(for_profile(settings['actions'], profile)):
+            button = Gtk.Button(label=action['label'])
+            button.get_style_context().add_class('kestrel-action')
+            button.set_image(Gtk.Image.new_from_icon_name(action['icon'], Gtk.IconSize.LARGE_TOOLBAR))
+            button.set_always_show_image(True);button.set_size_request(-1, 62)
+            button.connect('clicked', self.launch, action['command'])
+            grid.attach(button, index%columns, index//columns, 1, 1)
+        root.pack_start(grid, True, True, 0)
+        power = Gtk.Button(label=settings['power_label'])
+        if niri:
+            power.connect('clicked', self.power)
+        else:
+            power.connect('clicked', self.launch, ['xfce4-session-logout'])
+        root.pack_start(power, False, False, 0)
+        footer = Gtk.Label(label=shortcut_text(shortcuts, profile, compact=True), xalign=0)
+        footer.set_line_wrap(True);root.pack_start(footer, False, False, 0)
+
+    def launch(self, _button, command):
+        try:
+            subprocess.Popen(command, start_new_session=True)
+        except OSError as error:
+            dialog = Gtk.MessageDialog(transient_for=self, modal=True,
+                                       message_type=Gtk.MessageType.ERROR, buttons=Gtk.ButtonsType.CLOSE,
+                                       text='Could not open this tool')
+            dialog.format_secondary_text(str(error));dialog.run();dialog.destroy()
+
+    def power(self, _button):
+        self.launch(None, ['kestrel-tools', 'power'])
+
+
+if __name__ == '__main__':
+    try:
+        window = ControlCenter()
+        window.show_all()
+        Gtk.main()
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        dialog = Gtk.MessageDialog(message_type=Gtk.MessageType.ERROR, buttons=Gtk.ButtonsType.CLOSE,
+                                   text='Could not load desktop content')
+        dialog.format_secondary_text('Check the JSON files in /usr/share/rova.\n\n'+str(error))
+        dialog.run();dialog.destroy()
+        sys.exit(1)

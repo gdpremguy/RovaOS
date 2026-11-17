@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Your guide to apps, settings, Wi-Fi and USB saving in {{product_name}}.">
+  <title>Welcome to {{product_name}}</title>
+  <link rel="stylesheet" href="welcome.css">
+  <link rel="icon" type="image/svg+xml" href="../icons/hicolor/scalable/apps/kestrel.svg">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to the guide</a>
+  <header class="site-header">
+    <a class="wordmark" href="#home" aria-label="{{product_name}} home">
+      <img src="../icons/hicolor/scalable/apps/kestrel.svg" width="36" height="36" alt="">
+      <span>{{product_name}}</span>
+    </a>
+    <nav aria-label="On this page">
+      <a href="#start">Get started</a><a href="#saving">Keep your work</a>
+      <a href="#shortcuts">Shortcuts</a><a href="#help">Help</a>
+    </nav>
+  </header>
+  <main id="main">
+    <section class="hero" id="home" aria-labelledby="welcome-title">
+      <p class="eyebrow">WELCOME TO YOUR WORKSPACE</p>
+      <h1 id="welcome-title">{{headline}}</h1>
+      <p class="intro">{{welcome_intro}}</p>
+      <div class="hero-links"><a class="button" href="#start">Make yourself at home <span aria-hidden="true">↗</span></a>
+        <span class="offline-badge">Local guide · available offline</span></div>
+      <div class="hero-art" aria-hidden="true"><span>R</span></div>
+    </section>
+
+    <section id="start" aria-labelledby="start-title">
+      <p class="eyebrow">A FEW GOOD PLACES TO START</p>
+      <h2 id="start-title">Settle in.</h2>
+      <div class="cards">
+        <article class="card"><span class="step">01 / OPEN</span><h3>Find your apps</h3>
+          <p>Press <kbd>Super</kbd> + <kbd>Space</kbd> to search for an app. Open Firefox for the web, Files for your documents, or Terminal when you need it.</p></article>
+        <article class="card"><span class="step">02 / CONNECT</span><h3>Get online</h3>
+          <p>Use the network menu in the system tray to select your Wi-Fi network and enter its password. Open Wi-Fi &amp; networks from Control Center to edit saved connections or advanced settings.</p>
+          <p>For school or workplace networks, use the supplied authentication and CA certificate settings. Keep certificate verification enabled.</p></article>
+        <article class="card"><span class="step">03 / PERSONALISE</span><h3>Make it yours</h3>
+          <p>Press <kbd>Super</kbd> + <kbd>,</kbd> for {{control_center_title}}. Find display, sound, wallpaper and other workspace controls in one place.</p></article>
+      </div>
+    </section>
+
+    <section class="split" id="workspace" aria-labelledby="workspace-title">
+      <div><p class="eyebrow">ROOM TO THINK</p><h2 id="workspace-title">Your desktop, explained.</h2></div>
+      <div class="card"><h3>{{desktop_name}} workspace</h3><p>{{desktop_guide}}</p>
+        <p>The Super key is usually the Windows or Command key on your keyboard. See the shortcut reference below whenever you need a reminder.</p></div>
+    </section>
+
+    <section id="saving" aria-labelledby="saving-title">
+      <p class="eyebrow">TAKE YOUR WORK WITH YOU</p><h2 id="saving-title">Know what stays.</h2>
+      <div class="status-cards">
+        <article class="card"><span class="pill temporary">Temporary session</span>
+          <h3>Try things freely.</h3><p>Without confirmed USB saving, changes are lost when you shut down or restart. A file appearing on screen does not mean it has been saved to the USB.</p></article>
+        <article class="card"><span class="pill persistent">Saving enabled</span>
+          <h3>Pick up where you left off.</h3><p>With persistence active, settings, personal files, browser data and saved Wi-Fi profiles can survive a clean restart. Control Center reports the actual session state.</p></article>
+      </div>
+      <div class="card saving-steps"><h3>Enable saving on your boot USB</h3>
+        <ol><li>Open Control Center → USB saving setup.</li>
+          <li>Review the detected boot USB and proposed save area, then confirm if everything is correct.</li>
+          <li>Keep the USB connected while setup finishes, then restart.</li>
+          <li>Check Control Center again to confirm that saving is active.</li></ol>
+        <p>Setup uses spare space on the boot USB, up to 2 GiB by default, and refuses internal-drive targets. Some USB layouts or devices may not support this setup.</p>
+        <p><strong>Files from the current temporary session are not migrated.</strong> Copy anything important elsewhere before restarting.</p>
+      </div>
+      <aside class="notice" aria-label="Storage safety">
+        <h3>Your data deserves care.</h3>
+        <p>Saved USB data is <strong>not encrypted (sorry!)</strong>, including credentials. Anyone with the USB may be able to read it. Keep a separate backup and back up before reflashing, which can erase existing saves.</p>
+        <p>Keep the boot USB connected until the computer has fully powered off. Do not unplug it while the system is running or suspended. Internal drives are not installation targets; do not manually mount or modify them unless you intend to.</p>
+      </aside>
+    </section>
+
+    <section class="split" id="backup" aria-labelledby="backup-title">
+      <div><p class="eyebrow">A SECOND COPY HELPS</p><h2 id="backup-title">Back up before you travel.</h2></div>
+      <div class="card"><p>{{backup_guide}}</p>
+        <p>Close your apps before exporting. Keep the backup somewhere separate from the boot USB and treat it as private: archives are unencrypted and may contain passwords.</p></div>
+    </section>
+
+    <section id="shortcuts" aria-labelledby="shortcuts-title">
+      <p class="eyebrow">LESS HUNTING, MORE DOING</p><h2 id="shortcuts-title">A few useful shortcuts.</h2>
+      <div class="card shortcut-card"><table><caption class="visually-hidden">Desktop keyboard shortcuts</caption>
+        <thead><tr><th scope="col">Shortcut</th><th scope="col">Action</th></tr></thead>
+        <tbody>{{shortcuts}}</tbody></table></div>
+    </section>
+
+    <section id="help" aria-labelledby="help-title">
+      <p class="eyebrow">WHEN SOMETHING NEEDS A HAND</p><h2 id="help-title">Find your footing.</h2>
+      <div class="cards">
+        <article class="card"><h3>No Wi-Fi networks?</h3><p>Check airplane mode and your laptop's wireless switch or key. Run <code>rova-network-report</code> in Terminal to check drivers, radio blocks, NetworkManager and time sync without displaying saved Wi-Fi passwords.</p>
+          <p>Wireless support depends on your device, firmware and network configuration.</p></article>
+        <article class="card"><h3>Display or desktop trouble?</h3><p>{{recovery_guide}}</p></article>
+        <article class="card"><h3>Check the time</h3><p>The default timezone is Australia/Adelaide. Online time synchronisation helps keep the clock accurate. A wrong clock can prevent secure websites from loading; reconnect and check time sync before changing security settings.</p></article>
+      </div>
+    </section>
+  </main>
+  <footer><a class="wordmark" href="#home">{{product_name}} <span>/ {{desktop_name}}</span></a>
+    <p>{{subtitle}}</p><p>This guide opens locally. Internet access is only needed for online services.</p></footer>
+</body>
+</html>

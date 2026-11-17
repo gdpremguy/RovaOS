@@ -1,0 +1,35 @@
+{
+  "columns": 3,
+  "power_label": "Log out · Restart · Shut down",
+  "desktop_guides": {
+    "niri": "The Tiling Window Manager is a bit confusing to understand at first due to its weird tiling but once you get used to it, it is much better than usual hyprland tiling. Scaling, resizing and moving windows is much easier in RovaOS.",
+    "xfce": "xfce is NOT a tiling window manager cuz yeah"
+  },
+  "actions": [
+    {"id": "browser", "label": "Browser", "icon": "web-browser", "command": ["firefox-esr"]},
+    {"id": "files", "label": "Files", "icon": "system-file-manager", "command": ["thunar"]},
+    {"id": "network", "label": "Wi-Fi & networks", "icon": "network-wireless", "command": ["nm-connection-editor"]},
+    {"id": "quick", "label": "Quick settings & power", "icon": "preferences-system", "command": ["rova-tools", "quick"], "profiles": ["niri"]},
+    {"id": "display-niri", "label": "Display & monitors", "icon": "preferences-desktop-display", "command": ["rova-display-settings"], "profiles": ["niri"]},
+    {"id": "shortcuts-niri", "label": "Keyboard shortcuts", "icon": "preferences-desktop-keyboard", "command": ["niri", "msg", "action", "show-hotkey-overlay"], "profiles": ["niri"]},
+    {"id": "overview", "label": "Workspace overview", "icon": "preferences-system-windows", "command": ["niri", "msg", "action", "toggle-overview"], "profiles": ["niri"]},
+    {"id": "sound", "label": "Sound", "icon": "multimedia-volume-control", "command": ["pavucontrol"]},
+    {"id": "storage", "label": "Saving & backup", "icon": "drive-removable-media-usb", "command": ["rova-tools", "storage"], "profiles": ["niri"]},
+    {"id": "recovery", "label": "Recover desktop", "icon": "preferences-system", "command": ["rova-tools", "recovery"], "profiles": ["niri"]},
+    {"id": "welcome", "label": "Welcome & shortcuts", "icon": "help-browser", "command": ["rova-tools", "welcome"], "profiles": ["niri"]},
+    {"id": "wallpaper-niri", "label": "Wallpaper", "icon": "preferences-desktop-wallpaper", "command": ["rova-tools", "wallpaper"], "profiles": ["niri"]},
+    {"id": "monitor-niri", "label": "System monitor", "icon": "utilities-system-monitor", "command": ["foot", "top"], "profiles": ["niri"]},
+    {"id": "terminal-niri", "label": "Terminal", "icon": "utilities-terminal", "command": ["foot"], "profiles": ["niri"]},
+    {"id": "screenshot-niri", "label": "Screenshot", "icon": "applets-screenshooter", "command": ["niri", "msg", "action", "screenshot"], "profiles": ["niri"]},
+    {"id": "appearance", "label": "Appearance", "icon": "preferences-desktop-theme", "command": ["xfce4-appearance-settings"], "profiles": ["xfce"]},
+    {"id": "display-xfce", "label": "Display", "icon": "preferences-desktop-display", "command": ["xfce4-display-settings"], "profiles": ["xfce"]},
+    {"id": "shortcuts-xfce", "label": "Keyboard & shortcuts", "icon": "preferences-desktop-keyboard", "command": ["xfce4-keyboard-settings"], "profiles": ["xfce"]},
+    {"id": "wallpaper-xfce", "label": "Wallpaper", "icon": "preferences-desktop-wallpaper", "command": ["xfdesktop-settings"], "profiles": ["xfce"]},
+    {"id": "power-xfce", "label": "Power & battery", "icon": "preferences-system-power-management", "command": ["xfce4-power-manager-settings"], "profiles": ["xfce"]},
+    {"id": "monitor-xfce", "label": "System monitor", "icon": "utilities-system-monitor", "command": ["xfce4-taskmanager"], "profiles": ["xfce"]},
+    {"id": "terminal-xfce", "label": "Terminal", "icon": "utilities-terminal", "command": ["xfce4-terminal"], "profiles": ["xfce"]},
+    {"id": "screenshot-xfce", "label": "Screenshot", "icon": "applets-screenshooter", "command": ["xfce4-screenshooter"], "profiles": ["xfce"]},
+    {"id": "help", "label": "Welcome & help", "icon": "help-browser", "command": ["firefox-esr", "file:///usr/share/rova/welcome.html"]},
+    {"id": "saving-setup", "label": "USB saving setup", "icon": "drive-removable-media-usb", "command": ["rova-firstboot"]}
+  ]
+}

@@ -1,0 +1,12 @@
+[Unit]
+Description=Determine whether this Rova boot is actually persistent
+After=local-fs.target
+Before=display-manager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/kestrel-session-status --refresh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

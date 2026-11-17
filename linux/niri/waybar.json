@@ -1,0 +1,20 @@
+{
+  "layer": "top",
+  "position": "top",
+  "height": 44,
+  "spacing": 6,
+  "modules-left": ["group/navigation", "niri/window"],
+  "modules-center": ["clock"],
+  "modules-right": ["custom/saving", "group/system", "tray", "custom/settings"],
+  "group/navigation": {"orientation": "horizontal", "modules": ["custom/kestrel", "niri/workspaces"]},
+  "group/system": {"orientation": "horizontal", "modules": ["network", "pulseaudio", "battery"]},
+  "custom/kestrel": {"format": "R  /  Rova", "on-click": "fuzzel", "tooltip": false},
+  "custom/settings": {"format": "Settings", "on-click": "rova-tools quick", "on-click-right": "rova-settings", "tooltip": false},
+  "custom/saving": {"exec": "kestrel-desktop-status", "return-type": "json", "interval": 30, "on-click": "kestrel-tools storage"},
+  "niri/window": {"max-length": 30},
+  "clock": {"timezone": "Australia/Adelaide", "format": "{:%a %d %b  %H:%M}"},
+  "network": {"format-wifi": "Wi-Fi {signalStrength}%", "format-ethernet": "Wired", "format-disconnected": "Offline", "on-click": "kestrel-tools quick"},
+  "pulseaudio": {"format": "Vol {volume}%", "format-muted": "Muted", "on-click": "kestrel-tools quick"},
+  "battery": {"format": "Bat {capacity}%", "format-charging": "Charging {capacity}%", "on-click": "kestrel-tools quick"},
+  "tray": {"spacing": 10}
+}

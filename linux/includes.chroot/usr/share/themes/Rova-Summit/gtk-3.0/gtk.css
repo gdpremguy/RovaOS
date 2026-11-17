@@ -1,0 +1,24 @@
+/* Keep Arc's complete widget support; Rova owns the colour and surface layer. */
+@import url("/usr/share/themes/Arc-Dark/gtk-3.0/gtk.css");
+@define-color theme_bg_color #12232e;
+@define-color theme_fg_color #e8f3f5;
+@define-color theme_base_color #0d1b25;
+@define-color theme_text_color #e8f3f5;
+@define-color theme_selected_bg_color #227b82;
+@define-color theme_selected_fg_color #ffffff;
+window, dialog, .background { background-color: #12232e; color: #e8f3f5; }
+headerbar, .titlebar, menubar { background-image: none; background-color: #0d1b25; color: #e8f3f5; }
+button { background-image: none; background-color: #1c3542; color: #e8f3f5; border-color: #355361; border-radius: 6px; box-shadow: none; }
+button:hover { background-color: #284956; border-color: #64c6c1; }
+button:checked, button:active, .suggested-action { background-color: #227b82; color: #ffffff; }
+entry, textview text { background-color: #0d1b25; color: #e8f3f5; }
+selection { background-color: #227b82; color: #ffffff; }
+*:disabled { color: #849ba5; }
+.xfce4-panel { background-color: #0d1b25; color: #e8f3f5; }
+.xfce4-panel button { background-color: transparent; border-color: transparent; border-radius: 0; }
+.xfce4-panel button:hover, .xfce4-panel button:checked { background-color: #284956; }
+window.kestrel-control { background-color: #0d1b25; }
+.kestrel-eyebrow { color: #64c6c1; font-size: 11px; font-weight: bold; letter-spacing: 3px; }
+.kestrel-subtitle { color: #a4bdc6; }
+.kestrel-storage { background-color: #19323f; padding: 16px; border-radius: 10px; }
+.kestrel-action { padding: 10px; }

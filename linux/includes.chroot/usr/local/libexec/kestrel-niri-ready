@@ -1,0 +1,19 @@
+#!/usr/bin/python3
+"""Record the ready Wayland session for opt-in VM checks, then show settings."""
+import json
+import os
+import pathlib
+import subprocess
+
+runtime = pathlib.Path(os.environ['XDG_RUNTIME_DIR'])
+state = runtime/'kestrel-wayland.json'
+state.write_text(json.dumps({key: os.environ.get(key, '') for key in ('WAYLAND_DISPLAY', 'NIRI_SOCKET')}))
+state.chmod(0o600)
+marker = pathlib.Path.home()/'.config/kestrel/desktop-v2.ready'
+marker.parent.mkdir(parents=True, exist_ok=True)
+marker.touch()
+if pathlib.Path('/sys/class/dmi/id/sys_vendor').read_text().strip() != 'KestrelOS-Test':
+    if 'kestrel.recovery' in pathlib.Path('/proc/cmdline').read_text().split():
+        subprocess.Popen(['kestrel-tools', 'recovery'])
+    elif not (pathlib.Path.home()/'.config/kestrel/welcome-dismissed').exists():
+        subprocess.Popen(['kestrel-tools', 'welcome'])

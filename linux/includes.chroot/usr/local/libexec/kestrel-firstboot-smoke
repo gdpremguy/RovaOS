@@ -1,0 +1,28 @@
+#!/usr/bin/python3
+"""Destructive ONLY to explicitly opted-in QEMU virtual boot USB; never normal hardware."""
+import json
+import pathlib
+import subprocess
+import sys
+import time
+sys.path.insert(0, '/usr/local/lib/kestrel')
+
+if (pathlib.Path('/sys/class/dmi/id/sys_vendor').read_text().strip() != 'KestrelOS-Test'
+        or pathlib.Path('/sys/class/dmi/id/product_name').read_text().strip() != 'KestrelOS-Persist-Prepare'):
+    raise SystemExit('Not an opted-in disposable VM')
+with open('/dev/ttyS0', 'w', buffering=1) as serial:
+    sys.stdout = sys.stderr = serial
+    try:
+        from firstboot_persistence import plan_boot, apply_boot
+        status = json.loads(subprocess.check_output(['kestrel-session-status', '--json'], text=True))
+        assert not status['persistent'], 'Prepare phase must start temporary'
+        *_, description, fingerprint = plan_boot()
+        print(json.dumps(description))
+        result = apply_boot(fingerprint)
+        assert result['created'] and result['reboot_required']
+        print('KESTREL_PERSIST_PREPARE_PASS')
+        time.sleep(5)
+        subprocess.run(['systemctl', 'poweroff'], check=True)
+    except Exception as error:
+        print(f'KESTREL_PERSIST_FAIL {error!r}')
+        raise

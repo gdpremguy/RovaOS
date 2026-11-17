@@ -1,0 +1,17 @@
+* {
+    font: "DejaVu Sans 12";
+    background-color: #0d1b25;
+    text-color: #e8f3f5;
+    border-color: #64c6c1;
+    spacing: 12px;
+}
+window { width: 78%; border: 2px; border-radius: 12px; padding: 24px; }
+mainbox { children: [ inputbar, message, listview ]; }
+inputbar { children: [ prompt, entry ]; spacing: 16px; padding: 8px; }
+prompt { text-color: #64c6c1; }
+entry { placeholder: "Find an app. Make something."; }
+listview { columns: 2; lines: 5; fixed-height: false; spacing: 8px; }
+element { padding: 12px; border-radius: 8px; }
+element selected { background-color: #227b82; }
+element-icon { size: 28px; margin: 0px 12px 0px 0px; }
+element-text { vertical-align: 0.5; background-color: transparent; }

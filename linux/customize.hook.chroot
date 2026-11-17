@@ -1,0 +1,81 @@
+#!/bin/sh
+set -eu
+ln -sf /usr/share/zoneinfo/Australia/Adelaide /etc/localtime
+printf 'Australia/Adelaide\n' > /etc/timezone
+# Windows on this target uses a local-time RTC. NTP corrects Linux system time;
+# the old freestanding kernel's hardcoded -90 minute workaround is NOT copied.
+printf '0.0 0 0.0\n0\nLOCAL\n' > /etc/adjtime
+printf 'en_AU.UTF-8 UTF-8\n' > /etc/locale.gen
+locale-gen
+printf 'LANG=en_AU.UTF-8\n' > /etc/default/locale
+mkdir -p /etc/network
+printf 'auto lo\niface lo inet loopback\n' > /etc/network/interfaces
+systemctl enable NetworkManager.service systemd-timesyncd.service
+if [ "$(cat /etc/kestrel/desktop 2>/dev/null || true)" = niri ]; then
+    systemctl enable greetd.service
+    chmod 755 /usr/local/libexec/kestrel-niri-ready
+    chmod 755 /usr/local/bin/kestrel-display-settings
+    chmod 755 /usr/local/bin/kestrel-tools /usr/local/bin/kestrel-desktop-status
+    chmod 755 /usr/local/libexec/kestrel-autotile /usr/local/libexec/kestrel-wallpaper
+    chmod 755 /usr/local/libexec/kestrel-space-watch /usr/local/libexec/kestrel-niri-session
+    systemctl --global enable waybar.service mako.service kestrel-wallpaper.service kestrel-space-watch.service
+    systemctl enable power-profiles-daemon.service
+    niri validate --config /etc/skel/.config/niri/config.kdl
+else
+    systemctl enable lightdm.service
+fi
+chmod 755 /usr/local/bin/kestrel-network-report
+chmod 755 /usr/local/libexec/kestrel-smoke-report
+chmod 755 /usr/local/libexec/kestrel-smoke-enabled
+chmod 755 /usr/local/bin/kestrel-apps /usr/local/bin/kestrel-control-center /usr/local/bin/kestrel-session-status
+chmod 755 /usr/local/bin/kestrel-firstboot
+chmod 755 /usr/local/libexec/kestrel-desktop-init
+chmod 755 /usr/local/libexec/kestrel-display-default /usr/local/bin/kestrel-clock-report
+chmod 755 /usr/local/libexec/kestrel-persistence-smoke /usr/local/libexec/kestrel-persistence-smoke-enabled
+systemctl enable kestrel-smoke-report.service
+systemctl enable kestrel-persistence-smoke.service
+systemctl enable kestrel-session-state.service
+chmod 755 /usr/local/libexec/kestrel-firstboot-smoke /usr/local/libexec/kestrel-firstboot-smoke-enabled
+# Public Rova commands; old helper names remain valid for saved configurations.
+for helper in /usr/local/bin/kestrel-*; do
+    [ -f "$helper" ] || continue
+    name=${helper##*/}
+    ln -sfn "$name" "/usr/local/bin/rova-${name#kestrel-}"
+done
+ln -sfn kestrel-control-center /usr/local/bin/rova-settings
+# Keep the previous theme ID working without showing the previous brand name.
+mkdir -p /usr/share/themes/Kestrel-Summit
+cp -a /usr/share/themes/Rova-Summit/. /usr/share/themes/Kestrel-Summit/
+# Windows source mounts can supply uid 1000 and permissive directory modes.
+# Root-run helpers must never live in a user-writable import directory.
+chown -R root:root /usr/local
+find /usr/local -type d -exec chmod 755 '{}' +
+find /usr/local -type f -exec chmod go-w '{}' +
+if [ -d /usr/share/kestrel ] && [ ! -L /usr/share/kestrel ]; then
+    cp -a /usr/share/rova/. /usr/share/kestrel/
+    chown -R root:root /usr/share/kestrel
+    find /usr/share/kestrel -type d -exec chmod 755 '{}' +
+    find /usr/share/kestrel -type f -exec chmod go-w '{}' +
+else
+    ln -sfn rova /usr/share/kestrel
+fi
+chown -R root:root /usr/share/rova
+find /usr/share/rova -type d -exec chmod 755 '{}' +
+find /usr/share/rova -type f -exec chmod go-w '{}' +
+systemctl enable kestrel-firstboot-smoke.service
+mkdir -p /etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml /etc/skel/.config/gtk-3.0
+cp /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/*.xml /etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/
+# Only a stale file from our first prototype, not a distribution/user file.
+rm -f /etc/xdg/autostart/kestrel-network.desktop
+mkdir -p /usr/share/pixmaps
+ln -sf /usr/share/icons/hicolor/scalable/apps/kestrel.svg /usr/share/pixmaps/kestrel.svg
+gtk-update-icon-cache -f -t /usr/share/icons/hicolor
+mkdir -p /usr/share/kestrel
+dpkg-query -W -f='${Package}\t${Version}\n' > /usr/share/kestrel/package-manifest.tsv
+# A failed dependency or absent driver must fail the build, not produce a fake
+# Wi-Fi-capable image. This is not a substitute for testing the physical AX211.
+for package in firmware-iwlwifi network-manager wpasupplicant firefox-esr ca-certificates; do
+    dpkg-query -W -f='${Status}' "$package" | grep -q 'install ok installed'
+done
+find /lib/modules -name 'iwlwifi.ko*' | grep -q .
+find /usr/lib/firmware /lib/firmware -name 'iwlwifi-*.ucode*' | grep -q .

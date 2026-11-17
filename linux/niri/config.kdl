@@ -1,0 +1,68 @@
+// Rova Summit / Niri. Native fractional scaling; no XRandR workaround.
+input {
+    keyboard { xkb { layout "us"; }; numlock; }
+    touchpad { tap; natural-scroll; }
+}
+output "eDP-1" { scale 1.25; }
+output "Virtual-1" { mode "1280x768"; scale 1.25; }
+include optional=true "outputs.kdl"
+layout {
+    gaps 12
+    center-focused-column "on-overflow"
+    default-column-width { proportion 1.0; }
+    preset-column-widths { proportion 0.5; proportion 0.6; proportion 1.0; }
+    focus-ring { width 2; active-color "#64c6c1"; inactive-color "#355361"; }
+    border { off; }
+    shadow { off; }
+}
+animations { off; }
+hotkey-overlay { skip-at-startup; }
+// Waybar and mako are started by Debian's graphical-session user services.
+spawn-at-startup "nm-applet" "--indicator"
+spawn-at-startup "/usr/local/libexec/kestrel-niri-ready"
+spawn-at-startup "/usr/local/libexec/kestrel-autotile"
+environment {
+    GTK_THEME "Rova-Summit"
+    MOZ_ENABLE_WAYLAND "1"
+}
+window-rule { geometry-corner-radius 8; clip-to-geometry true; }
+// Niri floats parented dialogs automatically; these standalone tools also float.
+window-rule {
+    match title="^Rova (Quick Settings|Tools|Display Settings|Power|Recovery|Backup|Welcome)"
+    match title="^Welcome to Rova / Enable USB saving$"
+    match app-id="^(nm-connection-editor|pavucontrol)$"
+    open-floating true
+    default-column-width { proportion 0.65; }
+    default-window-height { proportion 0.75; }
+}
+binds {
+    Mod+Space hotkey-overlay-title="Rova Apps" { spawn "fuzzel"; }
+    Mod+Return hotkey-overlay-title="Terminal" { spawn "foot"; }
+    Mod+B hotkey-overlay-title="Browser" { spawn "firefox-esr"; }
+    Mod+E hotkey-overlay-title="Files" { spawn "thunar"; }
+    Mod+Comma hotkey-overlay-title="Rova Settings" { spawn "rova-settings"; }
+    Mod+S hotkey-overlay-title="Quick Settings" { spawn "rova-tools" "quick"; }
+    Mod+Q { close-window; }
+    Alt+F4 { close-window; }
+    Mod+Left { focus-column-left; }
+    Mod+Right { focus-column-right; }
+    Mod+Up { focus-window-up; }
+    Mod+Down { focus-window-down; }
+    Mod+Ctrl+Left { move-column-left; }
+    Mod+Ctrl+Right { move-column-right; }
+    Mod+Page_Up { focus-workspace-up; }
+    Mod+Page_Down { focus-workspace-down; }
+    Mod+O { toggle-overview; }
+    Mod+F { maximize-column; }
+    Mod+Shift+F { fullscreen-window; }
+    Mod+V { toggle-window-floating; }
+    Mod+R { switch-preset-column-width; }
+    Mod+Shift+Slash { show-hotkey-overlay; }
+    Mod+Shift+E { quit; }
+    Print { screenshot; }
+    XF86AudioRaiseVolume allow-when-locked=true { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "0.05+" "-l" "1.0"; }
+    XF86AudioLowerVolume allow-when-locked=true { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "0.05-"; }
+    XF86AudioMute allow-when-locked=true { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SINK@" "toggle"; }
+    XF86MonBrightnessUp { spawn "brightnessctl" "set" "+5%"; }
+    XF86MonBrightnessDown { spawn "brightnessctl" "set" "5%-"; }
+}

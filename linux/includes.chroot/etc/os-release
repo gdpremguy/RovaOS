@@ -1,0 +1,8 @@
+NAME="RovaOS"
+PRETTY_NAME="RovaOS"
+ID=rovaos
+ID_LIKE=debian
+VERSION_ID="0.2"
+VERSION="0.2 (Summit)"
+VERSION_CODENAME=trixie
+DEBIAN_VERSION="13"

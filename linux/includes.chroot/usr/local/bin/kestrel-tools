@@ -1,0 +1,266 @@
+#!/usr/bin/python3
+"""Lightweight GTK quick settings, welcome, backup, recovery and power dialogs."""
+import json
+import os
+import pathlib
+import shutil
+import subprocess
+import sys
+import threading
+sys.path.insert(0, '/usr/local/lib/kestrel')
+from desktop import backup_home, reset_desktop, status_module
+from session import session_status
+from experience import desktop_profile, load_content, shortcut_text
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk, GLib
+
+HOME = pathlib.Path.home()
+STATE = HOME / '.config/kestrel'
+
+
+class Tools(Gtk.Window):
+    def __init__(self, page):
+        self.brand, self.center, self.shortcuts = load_content()
+        super().__init__(title='Rova Quick Settings' if page == 'quick' else 'Rova Tools · ' + page.title())
+        self.set_default_size(540, 540)
+        self.set_position(Gtk.WindowPosition.CENTER)
+        self.connect('destroy', Gtk.main_quit)
+        self.busy = False
+        self.connect('delete-event', lambda *_: self.busy)
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14, margin=24)
+        scroll.add(self.box);self.add(scroll)
+        self.label(self.brand['eyebrow'])
+        self.status = Gtk.Label(xalign=0);self.status.set_line_wrap(True)
+        self.box.pack_end(self.status, False, False, 0)
+        getattr(self, page)()
+
+    def label(self, text):
+        label = Gtk.Label(label=text, xalign=0);label.set_line_wrap(True)
+        self.box.pack_start(label, False, False, 0)
+        return label
+
+    def button(self, text, callback):
+        button = Gtk.Button(label=text)
+        button.connect('clicked', callback)
+        self.box.pack_start(button, False, False, 0)
+        return button
+
+    def launch(self, command):
+        try:
+            subprocess.Popen(command, start_new_session=True)
+        except OSError as error:
+            self.status.set_text(str(error))
+
+    def confirm(self, title, detail):
+        dialog = Gtk.MessageDialog(transient_for=self, modal=True, message_type=Gtk.MessageType.WARNING,
+                                   buttons=Gtk.ButtonsType.OK_CANCEL, text=title)
+        dialog.format_secondary_text(detail)
+        response = dialog.run();dialog.destroy()
+        return response == Gtk.ResponseType.OK
+
+    def quick(self):
+        self.label('Quick settings')
+        for title, command in [('Wi-Fi & networks', ['nm-connection-editor']),
+                               ('Sound devices', ['pavucontrol']),
+                               ('Display & monitors', ['kestrel-display-settings']),
+                               ('All settings', ['kestrel-control-center'])]:
+            self.button(title, lambda _, command=command: self.launch(command))
+        if shutil.which('wpctl'):
+            volume = self.slider('Volume', 0, 100, self.volume())
+            volume.connect('value-changed', lambda widget: self.run(
+                ['wpctl', 'set-volume', '@DEFAULT_AUDIO_SINK@', f'{widget.get_value()/100:.2f}']))
+            self.button('Mute / unmute', lambda _: self.run(['wpctl', 'set-mute', '@DEFAULT_AUDIO_SINK@', 'toggle']))
+        backlights = list(pathlib.Path('/sys/class/backlight').glob('*/brightness'))
+        if backlights and shutil.which('brightnessctl'):
+            try:
+                value = int(backlights[0].read_text()) / int((backlights[0].parent/'max_brightness').read_text()) * 100
+                brightness = self.slider('Brightness', 5, 100, value)
+                brightness.connect('value-changed', lambda widget: self.run(
+                    ['brightnessctl', 'set', f'{widget.get_value():.0f}%']))
+            except (OSError, ValueError, ZeroDivisionError):
+                self.label('Brightness control is unavailable on this display.')
+        self.profiles()
+        self.button('Wallpaper', lambda _: self.launch(['kestrel-tools', 'wallpaper']))
+        self.button('Saving & backup', lambda _: self.launch(['kestrel-tools', 'storage']))
+        self.button('Set a session login password', lambda _: self.launch(['foot', 'passwd']))
+        self.button('Lock screen…', lambda _: self.launch(['swaylock', '-c', '0d1b25']) if self.confirm(
+            'Lock this session?', 'Set and remember your session login password first using the button above. '
+            'Automatic idle locking is off by default on this live USB.') else None)
+        self.button('Restart / shut down', lambda _: self.launch(['kestrel-tools', 'power']))
+
+    def run(self, command):
+        try:
+            subprocess.run(command, check=True, capture_output=True, text=True, timeout=15)
+        except (OSError, subprocess.SubprocessError) as error:
+            self.status.set_text('Unavailable or permission denied: ' + str(error))
+
+    def volume(self):
+        try:
+            text = subprocess.check_output(['wpctl', 'get-volume', '@DEFAULT_AUDIO_SINK@'], text=True, timeout=5)
+            return min(100, float(text.split()[1]) * 100)
+        except (OSError, ValueError, IndexError, subprocess.SubprocessError):
+            return 50
+
+    def slider(self, title, lower, upper, value):
+        self.label(title)
+        slider = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, lower, upper, 1)
+        slider.set_value(value);slider.set_digits(0)
+        self.box.pack_start(slider, False, False, 0)
+        return slider
+
+    def profiles(self):
+        try:
+            result = subprocess.check_output(['powerprofilesctl', 'list'], text=True, timeout=5)
+            current = subprocess.check_output(['powerprofilesctl', 'get'], text=True, timeout=5).strip()
+        except (OSError, subprocess.SubprocessError):
+            self.label('Power profiles are not available on this hardware.')
+            return
+        self.label('Power profile')
+        combo = Gtk.ComboBoxText()
+        for profile in ('power-saver', 'balanced', 'performance'):
+            if profile + ':' in result:
+                combo.append(profile, profile.replace('-', ' ').title())
+        combo.set_active_id(current)
+        combo.connect('changed', lambda widget: self.run(['powerprofilesctl', 'set', widget.get_active_id()]))
+        self.box.pack_start(combo, False, False, 0)
+
+    def storage(self):
+        self.label('USB saving')
+        label = self.label('')
+        meter = Gtk.ProgressBar();self.box.pack_start(meter, False, False, 0)
+        def refresh():
+            status = session_status()
+            label.set_text(status_module(status)['tooltip'])
+            total = status.get('total_bytes', 0)
+            meter.set_fraction(max(0, min(1, 1-status['free_bytes']/total)) if total else 0)
+            meter.set_show_text(True)
+            meter.set_text(f"{status['free_bytes']/2**30:.1f} GiB free" if total else 'Temporary session')
+            return True
+        refresh()
+        self.timer = GLib.timeout_add_seconds(30, refresh)
+        self.connect('destroy', lambda _: GLib.source_remove(self.timer))
+        self.button('Enable saving on this USB', lambda _: self.launch(['kestrel-firstboot']))
+        self.button('Export files & settings', lambda _: self.launch(['kestrel-tools', 'backup']))
+        self.button('Recover desktop settings', lambda _: self.launch(['kestrel-tools', 'recovery']))
+        self.label('Keep the boot USB connected until the computer has fully powered off. '
+                   'Do not unplug it while the system is running or suspended.')
+
+    def backup(self):
+        self.label('Export your home folder')
+        self.label('Exports files, desktop settings, Firefox profiles and saved user credentials. '
+                   'Excludes caches and Trash. This is NOT a full save-partition image: system-wide '
+                   'NetworkManager Wi-Fi profiles and installed system packages are not included. '
+                   'The archive is unencrypted. Close browsers and other apps first for a consistent backup.')
+        button = self.button('Choose another USB / destination folder', self.export)
+        self.export_button = button
+
+    def export(self, _button):
+        chooser = Gtk.FileChooserDialog(title='Choose backup destination', transient_for=self,
+                                        action=Gtk.FileChooserAction.SELECT_FOLDER)
+        chooser.add_buttons('Cancel', Gtk.ResponseType.CANCEL, 'Select', Gtk.ResponseType.OK)
+        response = chooser.run();destination = chooser.get_filename();chooser.destroy()
+        if response != Gtk.ResponseType.OK or not destination:
+            return
+        if not self.confirm('Write an unencrypted backup here?', destination + '\nMay contain passwords and private files. '
+                            'Use a separate USB. Close apps first. This does not erase or reformat any disk.'):
+            return
+        self.busy = True;self.export_button.set_sensitive(False)
+        self.status.set_text('Exporting. Keep both drives connected…')
+        def worker():
+            try:
+                result = 'Backup written: ' + str(backup_home(HOME, destination))
+            except Exception as error:
+                result = 'Backup failed: ' + str(error)
+            GLib.idle_add(self.export_done, result)
+        threading.Thread(target=worker, daemon=True).start()
+
+    def export_done(self, message):
+        self.busy = False;self.export_button.set_sensitive(True);self.status.set_text(message)
+        return False
+
+    def recovery(self):
+        self.label('Recover desktop settings')
+        self.label('Resets only Niri settings (including display layout). Your old Niri folder is renamed '
+                   'as a dated backup; files and browser data are not removed. Log out or restart afterwards. '
+                   'If the desktop will not start, choose “desktop recovery” in the boot menu. '
+                   'That boot uses temporary clean desktop settings and does not reset your saved settings automatically.')
+        self.button('Back up and reset Niri settings…', self.reset)
+
+    def reset(self, _button):
+        if self.confirm('Reset Niri settings?', 'Your current settings will be preserved in a dated folder. '
+                        'This takes effect in the next normal login. Continue?'):
+            try:
+                saved = reset_desktop(HOME, '/usr/share/rova/defaults/niri')
+                self.status.set_text(f'Defaults restored. Old settings: {saved}. Restart to use them.')
+            except (OSError, ValueError) as error:
+                self.status.set_text(str(error))
+
+    def welcome(self):
+        self.label(self.brand['headline'])
+        self.label(session_status()['description'])
+        self.label(shortcut_text(self.shortcuts, desktop_profile()))
+        self.label(self.center['desktop_guides'][desktop_profile()])
+        self.button('Saving & backup', lambda _: self.launch(['kestrel-tools', 'storage']))
+        if not session_status()['persistent']:
+            self.button('Enable saving on this USB…', lambda _: self.launch(['kestrel-firstboot']))
+        self.button('Control Center', lambda _: self.launch(['kestrel-control-center']))
+        self.button('Read the welcome guide', lambda _: self.launch(
+            ['firefox-esr', 'file:///usr/share/rova/welcome.html']))
+        checkbox = Gtk.CheckButton(label="Don't show this guide at startup again")
+        checkbox.set_active((STATE/'welcome-dismissed').exists())
+        def changed(widget):
+            STATE.mkdir(parents=True, exist_ok=True)
+            if widget.get_active():
+                (STATE/'welcome-dismissed').touch()
+            else:
+                (STATE/'welcome-dismissed').unlink(missing_ok=True)
+        checkbox.connect('toggled', changed)
+        self.box.pack_start(checkbox, False, False, 0)
+        self.label('Dismissal is remembered across restarts only when USB saving is enabled.')
+
+    def wallpaper(self):
+        self.label('Wallpaper')
+        self.label('Choose a local image. It is copied into your home so it remains available after '
+                   'removing the source drive (persistent sessions only).')
+        self.button('Choose wallpaper…', self.choose_wallpaper)
+        self.button('Use Rova Horizon default', lambda _: self.set_wallpaper('/usr/share/backgrounds/rova/rova-horizon.png'))
+
+    def choose_wallpaper(self, _button):
+        chooser = Gtk.FileChooserDialog(title='Choose wallpaper', transient_for=self, action=Gtk.FileChooserAction.OPEN)
+        chooser.add_buttons('Cancel', Gtk.ResponseType.CANCEL, 'Select', Gtk.ResponseType.OK)
+        filter_ = Gtk.FileFilter();filter_.set_name('Images');filter_.add_pixbuf_formats();chooser.add_filter(filter_)
+        response = chooser.run();path = chooser.get_filename();chooser.destroy()
+        if response == Gtk.ResponseType.OK and path:
+            self.set_wallpaper(path)
+
+    def set_wallpaper(self, source):
+        try:
+            from gi.repository import GdkPixbuf
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(source, 3840, 2160, True)
+            folder = HOME/'.local/share/kestrel';folder.mkdir(parents=True, exist_ok=True)
+            target = folder/'wallpaper.png'
+            pixbuf.savev(str(target), 'png', [], [])
+            self.run(['systemctl', '--user', 'restart', 'kestrel-wallpaper.service'])
+            self.status.set_text('Wallpaper saved. Retained after restart only with USB saving.')
+        except Exception as error:
+            self.status.set_text('Could not load wallpaper: ' + str(error))
+
+    def power(self):
+        self.label('Safe shutdown')
+        self.label('Keep the boot USB plugged in until the machine has completely powered off. '
+                   'Shutdown flushes saved writes; suspend does not make it safe to unplug. '
+                   'Temporary-session changes are lost. Finish backups and close apps first.')
+        for text, command in [('Log out', ['niri', 'msg', 'action', 'quit']),
+                              ('Restart', ['systemctl', 'reboot']), ('Shut down', ['systemctl', 'poweroff'])]:
+            self.button(text + '…', lambda _, text=text, command=command:
+                        self.launch(command) if self.confirm(text + '?', 'Close apps and finish file transfers first. '
+                        'Keep your boot USB connected until power is off.') else None)
+
+
+page = sys.argv[1] if len(sys.argv) > 1 else 'quick'
+if page not in ('quick', 'storage', 'backup', 'recovery', 'welcome', 'wallpaper', 'power'):
+    raise SystemExit('Unknown Rova tools page')
+window = Tools(page);window.show_all();Gtk.main()

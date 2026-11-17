@@ -1,0 +1,48 @@
+#!/usr/bin/python3
+"""125% whole-screen enlargement, only when no user display profile exists."""
+import os
+import pathlib
+import re
+import subprocess
+import sys
+import time
+
+
+def run(*args):
+    return subprocess.run(args, check=True, capture_output=True, text=True, timeout=15)
+
+
+def active_outputs(text):
+    return re.findall(r'^(\S+) connected (?:primary )?(\d+)x(\d+)\+0\+0\b', text, re.M)
+
+
+def main():
+    config = pathlib.Path(os.environ.get('XDG_CONFIG_HOME', str(pathlib.Path.home()/'.config')))
+    # Xfce owns saved user choices. Never overwrite them on login.
+    if (config/'xfce4/xfconf/xfce-perchannel-xml/displays.xml').exists():
+        return
+    time.sleep(3)
+    text = run('xrandr', '--query').stdout
+    outputs = active_outputs(text)
+    # Don't rearrange multi-monitor layouts or enable disconnected outputs.
+    if len(outputs) != 1 or len(re.findall(r'^\S+ connected .*\d+x\d+\+', text, re.M)) != 1:
+        return
+    output, width, height = outputs[0]
+    width, height = int(width), int(height)
+    logical = (round(width/1.25), round(height/1.25))
+    if logical[0] < 800 or logical[1] < 600:
+        return
+    try:
+        # RandR uses the inverse of UI magnification: 0.8 = 125% larger UI.
+        run('xrandr', '--output', output, '--scale', '0.8x0.8',
+            '--fb', f'{logical[0]}x{logical[1]}')
+    except subprocess.CalledProcessError:
+        run('xrandr', '--output', output, '--scale', '1x1', '--fb', f'{width}x{height}')
+        raise
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except (OSError, subprocess.SubprocessError) as error:
+        print(f'Rova default scaling not applied: {error}', file=sys.stderr)

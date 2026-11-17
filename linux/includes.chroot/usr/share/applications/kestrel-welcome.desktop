@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Welcome to Rova
+Comment=Get started with apps, Wi-Fi, USB saving and your workspace
+Exec=firefox-esr file:///usr/share/rova/welcome.html
+Icon=kestrel
+Categories=Utility;Documentation;
+Terminal=false

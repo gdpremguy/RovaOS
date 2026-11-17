@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3840" height="2160" viewBox="0 0 1920 1080">
+<title>Rova Horizon</title>
+<desc>Original geometric wallpaper created for RovaOS. Editable curves and gradients; no third-party image assets.</desc>
+<defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#0c1c2c"/><stop offset=".55" stop-color="#263e58"/><stop offset="1" stop-color="#a2a0b5"/></linearGradient><radialGradient id="haze" cx=".77" cy=".57" r=".58"><stop stop-color="#b4a2bd" stop-opacity=".24"/><stop offset="1" stop-color="#b4a2bd" stop-opacity="0"/></radialGradient><linearGradient id="distance" gradientUnits="userSpaceOnUse" x1="0" y1="745" x2="0" y2="1080"><stop stop-color="#7284a3"/><stop offset="1" stop-color="#294960"/></linearGradient><linearGradient id="mist" gradientUnits="userSpaceOnUse" x1="0" y1="725" x2="0" y2="1080"><stop stop-color="#5c97a2"/><stop offset="1" stop-color="#1c4c60"/></linearGradient><linearGradient id="sweep" gradientUnits="userSpaceOnUse" x1="0" y1="570" x2="0" y2="1080"><stop stop-color="#32808b"/><stop offset="1" stop-color="#103145"/></linearGradient><linearGradient id="foreground" gradientUnits="userSpaceOnUse" x1="0" y1="763" x2="0" y2="1080"><stop stop-color="#164656"/><stop offset="1" stop-color="#091828"/></linearGradient></defs>
+<rect width="1920" height="1080" fill="url(#sky)"/>
+<rect width="1920" height="1080" fill="url(#haze)"/>
+<path d="M 0 745 C 520 785 845 660 1170 626 C 1490 590 1710 627 1920 546 L 1920 1080 L 0 1080 Z" fill="url(#distance)"/>
+<path d="M 0 725 C 375 611 680 697 1030 758 C 1400 822 1670 644 1920 652 L 1920 1080 L 0 1080 Z" fill="url(#mist)"/>
+<path d="M 0 570 C 360 590 448 804 938 846 C 1320 880 1615 716 1920 779 L 1920 1080 L 0 1080 Z" fill="url(#sweep)"/>
+<path d="M 0 763 C 260 713 485 876 792 942 C 1150 1020 1595 878 1920 905 L 1920 1080 L 0 1080 Z" fill="url(#foreground)"/>
+</svg>

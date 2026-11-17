@@ -1,0 +1,6 @@
+#!/bin/sh
+# Read-only clock diagnostics. Does not change the PC hardware clock.
+timedatectl status
+timedatectl timesync-status || true
+date '+Local: %Y-%m-%d %H:%M:%S %Z %:z'
+date -u '+UTC:   %Y-%m-%d %H:%M:%S'

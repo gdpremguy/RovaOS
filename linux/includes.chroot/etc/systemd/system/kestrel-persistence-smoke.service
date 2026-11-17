@@ -1,0 +1,13 @@
+[Unit]
+Description=Opt-in virtual USB persistence and settings test
+After=NetworkManager.service display-manager.service kestrel-session-state.service
+Wants=NetworkManager.service display-manager.service
+
+[Service]
+Type=oneshot
+ExecCondition=/usr/local/libexec/kestrel-persistence-smoke-enabled
+ExecStart=/usr/local/libexec/kestrel-persistence-smoke
+TimeoutStartSec=240
+
+[Install]
+WantedBy=multi-user.target

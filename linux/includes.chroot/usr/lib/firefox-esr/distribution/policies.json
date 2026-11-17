@@ -1,0 +1,11 @@
+{
+  "policies": {
+    "Homepage": {
+      "URL": "file:///usr/share/rova/welcome.html",
+      "StartPage": "homepage"
+    },
+    "DontCheckDefaultBrowser": true,
+    "DisableTelemetry": true,
+    "DisableFirefoxStudies": true
+  }
+}

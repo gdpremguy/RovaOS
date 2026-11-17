@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Rova Settings
+Comment=Appearance, Wi-Fi, keyboard and persistent storage
+Exec=rova-settings
+Icon=kestrel
+Categories=Settings;
+Terminal=false

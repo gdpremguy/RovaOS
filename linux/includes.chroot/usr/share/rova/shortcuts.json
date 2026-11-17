@@ -1,0 +1,13 @@
+[
+  {"keys": "Super+Space", "label": "Apps", "binding": "Mod+Space", "profiles": ["niri", "xfce"], "compact": true},
+  {"keys": "Super+Enter", "label": "Terminal", "binding": "Mod+Return", "profiles": ["niri", "xfce"], "compact": true},
+  {"keys": "Super+B", "label": "Browser", "binding": "Mod+B", "profiles": ["niri", "xfce"], "compact": true},
+  {"keys": "Super+E", "label": "Files", "binding": "Mod+E", "profiles": ["niri", "xfce"]},
+  {"keys": "Super+S", "label": "Quick settings", "binding": "Mod+S", "profiles": ["niri"]},
+  {"keys": "Super+,", "label": "Rova Settings", "binding": "Mod+Comma", "profiles": ["niri", "xfce"], "compact": true},
+  {"keys": "Super+O", "label": "Workspace overview", "binding": "Mod+O", "profiles": ["niri"]},
+  {"keys": "Super+V", "label": "Switch between floating and tiled", "binding": "Mod+V", "profiles": ["niri"]},
+  {"keys": "Super+Shift+F", "label": "Fullscreen", "binding": "Mod+Shift+F", "profiles": ["niri"]},
+  {"keys": "Alt+F4", "label": "Close window", "binding": "Alt+F4", "profiles": ["niri", "xfce"]},
+  {"keys": "Print", "label": "Screenshot", "binding": "Print", "profiles": ["niri", "xfce"]}
+]

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Rova Horizon
+Comment=Rova's midnight, mist and teal desktop
+
+[X-GNOME-Metatheme]
+GtkTheme=Rova-Summit
+MetacityTheme=Arc-Dark
+IconTheme=Papirus-Dark
+CursorTheme=Adwaita

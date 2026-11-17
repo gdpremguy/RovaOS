@@ -1,0 +1,48 @@
+#!/bin/bash
+# Runs only on our labelled disposable QEMU test disk, never on normal hardware.
+set -Eeuo pipefail
+exec >/dev/ttyS0 2>&1
+trap 's=$?; if ((s)); then echo "KESTREL_PERSIST_FAIL status=$s line=$LINENO"; fi' EXIT
+phase=$(cat /sys/class/dmi/id/product_name)
+token=$(cat /sys/class/dmi/id/product_serial)
+echo KESTREL_PERSIST_BEGIN
+kestrel-session-status --json | grep -q '"persistent": true'
+for attempt in {1..120}; do
+    if [[ -f /home/kestrel/.config/kestrel/desktop-v2.ready && -S /run/user/1000/bus ]] && { pgrep -x xfce4-session >/dev/null || pgrep -x niri >/dev/null; }; then break;fi
+    sleep 1
+done
+test -f /home/kestrel/.config/kestrel/desktop-v2.ready
+user() {
+    runuser -u kestrel -- env HOME=/home/kestrel DISPLAY=:0 \
+        DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus "$@"
+}
+if [[ $phase == KestrelOS-Persist-Write ]]; then
+    install -d -o kestrel -g kestrel /home/kestrel/Downloads /home/kestrel/.mozilla/firefox
+    printf '%s\n' "$token" > /home/kestrel/Downloads/persistence-test.txt
+    printf '%s\n' "$token" > /home/kestrel/.mozilla/firefox/persistence-test.txt
+    chown kestrel:kestrel /home/kestrel/Downloads/persistence-test.txt /home/kestrel/.mozilla/firefox/persistence-test.txt
+    if [[ -f /etc/kestrel/desktop && $(cat /etc/kestrel/desktop) == niri ]]; then
+        sed -i 's/gtk-font-name=.*/gtk-font-name=DejaVu Sans 12/' /home/kestrel/.config/gtk-3.0/settings.ini
+    else
+        user xfconf-query -c xsettings -p /Gtk/FontName -s 'DejaVu Sans 12'
+    fi
+    # Synthetic credentials only, never a user's actual access point/password.
+    nmcli connection add type wifi ifname '*' con-name kestrel-persistence-test \
+        ssid KestrelEmulatorOnly connection.autoconnect no \
+        wifi-sec.key-mgmt wpa-psk wifi-sec.psk emulator-test-only-pass
+    sleep 3
+    sync
+    echo KESTREL_PERSIST_WRITE_PASS
+else
+    test "$(cat /home/kestrel/Downloads/persistence-test.txt)" = "$token"
+    test "$(cat /home/kestrel/.mozilla/firefox/persistence-test.txt)" = "$token"
+    if [[ -f /etc/kestrel/desktop && $(cat /etc/kestrel/desktop) == niri ]]; then
+        grep -q '^gtk-font-name=DejaVu Sans 12$' /home/kestrel/.config/gtk-3.0/settings.ini
+    else
+        test "$(user xfconf-query -c xsettings -p /Gtk/FontName)" = 'DejaVu Sans 12'
+    fi
+    test "$(nmcli -g 802-11-wireless-security.psk --show-secrets connection show kestrel-persistence-test)" = emulator-test-only-pass
+    echo KESTREL_PERSIST_READ_PASS
+fi
+sleep 5
+systemctl poweroff

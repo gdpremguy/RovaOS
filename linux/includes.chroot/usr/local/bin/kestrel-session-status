@@ -1,0 +1,19 @@
+#!/usr/bin/python3
+import json
+import os
+import pathlib
+import sys
+sys.path.insert(0, '/usr/local/lib/kestrel')
+from session import session_status
+status = session_status()
+if '--refresh' in sys.argv:
+    if os.geteuid() != 0:
+        raise SystemExit('Only root may refresh the boot session status.')
+    path = pathlib.Path('/run/kestrel-session.json')
+    path.write_text(json.dumps(status)+'\n');path.chmod(0o644)
+elif '--json' in sys.argv:
+    print(json.dumps(status))
+else:
+    print(status['description'])
+    if status['persistent']:
+        print(f"Free space: {status['free_bytes']/2**30:.1f} GiB")

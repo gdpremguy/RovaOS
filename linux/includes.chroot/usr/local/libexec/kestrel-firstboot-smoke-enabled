@@ -1,0 +1,3 @@
+#!/bin/sh
+test "$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null)" = KestrelOS-Test &&
+test "$(cat /sys/class/dmi/id/product_name 2>/dev/null)" = KestrelOS-Persist-Prepare

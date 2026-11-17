@@ -1,0 +1,69 @@
+* {
+    font-family: "DejaVu Sans";
+    font-size: 12px;
+    border: none;
+    border-radius: 0;
+    min-height: 0;
+}
+
+/* Keep the shadow INSIDE the layer surface so it is not clipped by Wayland.
+ * The transparent bottom margin reserves its space below the visible bar. */
+window#waybar {
+    background: transparent;
+    color: #e8f3f5;
+}
+
+window#waybar > box {
+    background: #0d1b25;
+    border: 1px solid rgba(164, 189, 198, 0.28);
+    border-radius: 0 0 8px 8px;
+    padding: 3px 8px;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.60);
+}
+
+/* Distinct, restrained sections rather than a single uninterrupted text row. */
+#navigation, #system, #clock, #custom-saving, #tray, #custom-settings {
+    background: rgba(232, 243, 245, 0.045);
+    border: 1px solid rgba(164, 189, 198, 0.16);
+    border-radius: 6px;
+}
+
+#custom-kestrel {
+    color: #64c6c1;
+    padding: 0 10px;
+    font-weight: bold;
+    border-right: 1px solid rgba(164, 189, 198, 0.16);
+}
+
+#workspaces { padding: 0 3px; }
+#workspaces button {
+    color: #a4bdc6;
+    padding: 0 7px;
+    background: transparent;
+    border-bottom: 2px solid transparent;
+    border-radius: 4px;
+}
+#workspaces button.active {
+    color: #64c6c1;
+    background: rgba(100, 198, 193, 0.10);
+    border-bottom-color: #64c6c1;
+}
+
+#window { color: #a4bdc6; padding: 0 6px; }
+#clock { padding: 0 12px; font-weight: bold; }
+#custom-saving, #custom-settings { padding: 0 10px; }
+#network, #pulseaudio, #battery { padding: 0 9px; }
+#pulseaudio, #battery { border-left: 1px solid rgba(164, 189, 198, 0.12); }
+#tray { padding: 0 9px; }
+#custom-settings { color: #64c6c1; }
+
+#custom-kestrel:hover, #workspaces button:hover,
+#custom-saving:hover, #network:hover, #pulseaudio:hover,
+#battery:hover, #custom-settings:hover {
+    background: rgba(100, 198, 193, 0.12);
+}
+
+#custom-saving.temporary { color: #e4bf82; }
+#custom-saving.persistent { color: #64c6c1; }
+#custom-saving.low-space { color: #ff8585; font-weight: bold; }

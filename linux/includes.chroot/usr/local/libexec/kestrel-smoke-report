@@ -1,0 +1,92 @@
+#!/bin/bash
+# Disabled on normal boots; activated only by the explicit test VM DMI labels.
+set -Eeuo pipefail
+exec >/dev/ttyS0 2>&1
+trap 's=$?; if ((s)); then echo "KESTREL_SMOKE_FAIL status=$s line=$LINENO"; fi' EXIT
+echo KESTREL_SMOKE_BEGIN
+nm-online --quiet --timeout=120
+echo KESTREL_NETWORK_ONLINE
+for attempt in $(seq 1 120); do
+    if pgrep -x xfce4-session >/dev/null || pgrep -x niri >/dev/null; then break; fi
+    sleep 1
+done
+pgrep -x xfce4-session >/dev/null || pgrep -x niri >/dev/null
+echo KESTREL_DESKTOP_RUNNING
+for attempt in {1..60}; do
+    [[ -f /home/kestrel/.config/kestrel/desktop-v2.ready && -S /run/user/1000/bus ]] && break
+    sleep 1
+done
+test -f /home/kestrel/.config/kestrel/desktop-v2.ready
+test -S /run/user/1000/bus
+user() (
+    if [[ -f /run/user/1000/kestrel-wayland.json ]]; then
+        local display socket
+        display=$(python3 -c 'import json; print(json.load(open("/run/user/1000/kestrel-wayland.json"))["WAYLAND_DISPLAY"])')
+        socket=$(python3 -c 'import json; print(json.load(open("/run/user/1000/kestrel-wayland.json"))["NIRI_SOCKET"])')
+        exec runuser -u kestrel -- env HOME=/home/kestrel XDG_RUNTIME_DIR=/run/user/1000 \
+            WAYLAND_DISPLAY="$display" NIRI_SOCKET="$socket" XDG_CURRENT_DESKTOP=niri \
+            GTK_THEME=Rova-Summit MOZ_ENABLE_WAYLAND=1 \
+            DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus "$@"
+    else
+        exec runuser -u kestrel -- env HOME=/home/kestrel DISPLAY=:0 \
+        DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus "$@"
+    fi
+)
+if pgrep -x niri >/dev/null; then
+    user niri msg --json outputs >/run/kestrel-niri-outputs.json
+    cat /run/kestrel-niri-outputs.json
+    journalctl -b --no-pager _COMM=niri || true
+    cat /sys/class/tty/tty0/active || true
+    python3 -c 'import json; outputs=json.load(open("/run/kestrel-niri-outputs.json")); assert any(o.get("current_mode") is not None for o in outputs.values()), "Niri has no active output"'
+fi
+pgrep -ax xfce4-panel || true
+user xfconf-query -c xfce4-panel -lv || true
+# Check the real GTK program starts, not merely that its .desktop file exists.
+user kestrel-control-center >/run/kestrel-control-center.log 2>&1 &
+center_pid=$!
+sleep 4
+if ! kill -0 "$center_pid" 2>/dev/null; then
+    cat /run/kestrel-control-center.log
+    exit 1
+fi
+if pgrep -x niri >/dev/null; then
+    for attempt in {1..60}; do
+        user niri msg --json windows >/run/kestrel-niri-windows.json
+        if python3 -c 'import json; import sys; sys.exit(not bool(json.load(open("/run/kestrel-niri-windows.json"))))'; then break; fi
+        kill -0 "$center_pid" 2>/dev/null || break
+        sleep 1
+    done
+    cat /run/kestrel-control-center.log
+    user niri msg --json windows >/run/kestrel-niri-windows.json
+    cat /run/kestrel-niri-windows.json
+    python3 -c 'import json; assert json.load(open("/run/kestrel-niri-windows.json")), "No graphical window mapped in Niri"'
+fi
+kill "$center_pid" || true
+wait "$center_pid" || true
+echo KESTREL_CONTROL_CENTER_OK
+if pgrep -x niri >/dev/null; then
+    user python3 /usr/local/libexec/kestrel-desktop-smoke
+fi
+# Certificate verification stays enabled. DNS and TCP/TLS run in the guest.
+curl --fail --silent --show-error --max-time 45 https://example.com/ >/run/kestrel-example.html
+grep -q 'Example Domain' /run/kestrel-example.html
+echo KESTREL_GUEST_HTTPS_OK
+install -d -o kestrel -g kestrel -m 700 /run/kestrel-smoke
+install -d -o kestrel -g kestrel -m 700 /run/kestrel-smoke/firefox
+timeout 120 runuser -u kestrel -- env HOME=/home/kestrel \
+    firefox-esr --headless --no-remote --profile /run/kestrel-smoke/firefox \
+    --window-size 1024,768 --screenshot /run/kestrel-smoke/browser.png https://example.com/
+test -s /run/kestrel-smoke/browser.png
+printf 'KESTREL_BROWSER_PNG_BASE64='
+base64 -w 0 /run/kestrel-smoke/browser.png
+printf '\n'
+# Render the shipped local guide too: no network content or frontend runtime.
+install -d -o kestrel -g kestrel -m 700 /run/kestrel-smoke/welcome
+timeout 120 runuser -u kestrel -- env HOME=/home/kestrel \
+    firefox-esr --headless --no-remote --profile /run/kestrel-smoke/welcome \
+    --window-size 1280,800 --screenshot /run/kestrel-smoke/welcome.png \
+    file:///usr/share/rova/welcome.html
+test -s /run/kestrel-smoke/welcome.png
+printf 'KESTREL_WELCOME_PNG_BASE64='
+base64 -w 0 /run/kestrel-smoke/welcome.png
+printf '\nKESTREL_SMOKE_PASS\n'

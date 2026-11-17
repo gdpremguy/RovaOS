@@ -1,0 +1,15 @@
+[Unit]
+Description=Opt-in RovaOS emulator network and browser test
+After=NetworkManager.service display-manager.service
+Wants=NetworkManager.service display-manager.service
+
+[Service]
+Type=oneshot
+ExecCondition=/usr/local/libexec/kestrel-smoke-enabled
+ExecStart=/usr/local/libexec/kestrel-smoke-report
+StandardOutput=journal+console
+StandardError=journal+console
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

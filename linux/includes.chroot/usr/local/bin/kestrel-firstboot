@@ -1,0 +1,112 @@
+#!/usr/bin/python3
+"""One-confirmation USB saving setup; no device selection UI or internal targets."""
+import json
+import pathlib
+import subprocess
+import sys
+import threading
+sys.path.insert(0, '/usr/local/lib/kestrel')
+from session import session_status
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk, GLib
+
+BACKEND = '/usr/local/lib/kestrel/firstboot_persistence.py'
+
+
+def backend(*args):
+    result = subprocess.run(['sudo', '-n', '/usr/bin/python3', BACKEND, *args],
+                            capture_output=True, text=True, timeout=600)
+    try:
+        data = json.loads(result.stdout)
+    except ValueError:
+        raise RuntimeError(result.stderr.strip() or 'USB setup could not obtain permission')
+    if result.returncode or 'error' in data:
+        raise RuntimeError(data.get('error', 'USB setup failed')+'\n'+data.get('message', ''))
+    return data
+
+
+class FirstBoot(Gtk.Window):
+    def __init__(self):
+        super().__init__(title='Welcome to Rova / Enable USB saving')
+        self.set_default_size(600, 360)
+        self.set_position(Gtk.WindowPosition.CENTER)
+        self.connect('delete-event', self.close_requested)
+        self.connect('destroy', Gtk.main_quit)
+        self.busy = False
+        self.plan = None
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=18, margin=28)
+        self.add(box)
+        heading = Gtk.Label(xalign=0)
+        heading.set_markup('<span size="22000" weight="bold">Take your workspace with you.</span>')
+        box.pack_start(heading, False, False, 0)
+        self.status = Gtk.Label(label='Checking this boot USB…', xalign=0)
+        self.status.set_line_wrap(True);self.status.set_max_width_chars(65)
+        box.pack_start(self.status, True, True, 0)
+        self.enable = Gtk.Button(label='Enable saving on this USB')
+        self.enable.set_sensitive(False);self.enable.connect('clicked', self.confirm)
+        box.pack_start(self.enable, False, False, 0)
+        self.later = Gtk.Button(label='Continue without saving')
+        self.later.connect('clicked', lambda _button: self.destroy())
+        box.pack_start(self.later, False, False, 0)
+        self.work(lambda: backend(), self.show_plan)
+
+    def close_requested(self, *_args):
+        return self.busy
+
+    def work(self, operation, success):
+        self.busy = True
+        self.later.set_sensitive(False)
+        def worker():
+            try:
+                value = operation()
+                GLib.idle_add(self.finished, success, value, None)
+            except Exception as error:
+                GLib.idle_add(self.finished, success, None, str(error))
+        threading.Thread(target=worker, daemon=True).start()
+
+    def finished(self, success, value, error):
+        self.busy = False
+        self.later.set_sensitive(True)
+        if error:
+            self.status.set_text(error)
+            self.enable.set_sensitive(False)
+        else:
+            success(value)
+        return False
+
+    def show_plan(self, plan):
+        self.plan = plan
+        self.status.set_text(f'Boot USB: {plan["usb"]}\nCapacity: {plan["capacity_bytes"]/2**30:.2f} GiB\n'
+                             f'Save space: {plan["save_mib"]/1024:.2f} GiB\n\n'
+                             'Use spare space on this USB for settings, files and browser data. '
+                             'No internal drive is selected. Saving is unencrypted, including Wi-Fi passwords. '
+                             'A restart is required; files from this temporary session are not migrated.')
+        self.enable.set_sensitive(True)
+
+    def confirm(self, _button):
+        dialog = Gtk.MessageDialog(transient_for=self, modal=True, message_type=Gtk.MessageType.WARNING,
+                                   buttons=Gtk.ButtonsType.YES_NO, text='Create a save partition on this boot USB?')
+        dialog.format_secondary_text(f'{self.plan["usb"]}\nOnly the new save area will be formatted. '
+                                     'Keep the USB plugged in. Back up any old USB data first. '
+                                     'Internal drives are refused. Continue?')
+        response = dialog.run();dialog.destroy()
+        if response != Gtk.ResponseType.YES:
+            return
+        self.enable.set_sensitive(False)
+        self.status.set_text('Creating USB save storage. Do not unplug the USB or shut down…')
+        self.work(lambda: backend('--apply-confirmed', self.plan['confirmation']), self.created)
+
+    def created(self, result):
+        self.status.set_text(result['message'])
+        self.enable.set_label('Restart now')
+        self.enable.disconnect_by_func(self.confirm)
+        self.enable.connect('clicked', lambda _button: subprocess.Popen(['systemctl', 'reboot']))
+        self.enable.set_sensitive(True)
+        self.later.set_label('Restart later — still temporary for now')
+
+
+if __name__ == '__main__':
+    if session_status()['persistent']:
+        sys.exit(0)
+    window = FirstBoot();window.show_all();Gtk.main()

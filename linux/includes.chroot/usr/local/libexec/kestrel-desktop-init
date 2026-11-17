@@ -1,0 +1,34 @@
+#!/bin/bash
+# Seed defaults ONCE per home directory. Never reset a saved user's choices.
+set -eu
+marker=$HOME/.config/kestrel/desktop-v2.ready
+[[ -f $marker ]] && exit 0
+set_property() {
+    local channel=$1 property=$2 type=$3 value=$4
+    xfconf-query -c "$channel" -p "$property" -s "$value" 2>/dev/null ||
+        xfconf-query -c "$channel" -p "$property" -n -t "$type" -s "$value"
+}
+for attempt in {1..20}; do
+    if xfconf-query -c xsettings -l >/dev/null 2>&1; then break;fi
+    sleep 1
+done
+set_property xsettings /Net/ThemeName string Rova-Summit
+set_property xsettings /Net/IconThemeName string Papirus-Dark
+set_property xsettings /Gtk/FontName string 'DejaVu Sans 11'
+set_property xfwm4 /general/theme string Arc-Dark
+set_property xfce4-desktop /desktop-icons/style int 0
+# Use actual connected output names, not the prototype's non-existent monitor.
+while read -r monitor; do
+    for workspace in 0 1 2 3; do
+        base="/backdrop/screen0/monitor$monitor/workspace$workspace"
+        set_property xfce4-desktop "$base/last-image" string /usr/share/backgrounds/rova/rova-horizon.png
+        set_property xfce4-desktop "$base/image-style" int 5
+    done
+done < <(xrandr --query | awk '$2=="connected" {print $1}')
+mkdir -p "$(dirname "$marker")"
+printf '2\n' > "$marker"
+notify-send -i kestrel 'Welcome to Rova' 'Super+Space: Apps. Super+comma: Settings. Check Storage to confirm persistence.' || true
+# Tests opt in via DMI; don't obscure their initial desktop screenshot.
+if [[ $(cat /sys/class/dmi/id/sys_vendor 2>/dev/null) != KestrelOS-Test ]]; then
+    kestrel-firstboot &
+fi

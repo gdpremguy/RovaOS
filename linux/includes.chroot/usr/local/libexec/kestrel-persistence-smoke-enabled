@@ -1,0 +1,6 @@
+#!/bin/sh
+test "$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null)" = KestrelOS-Test || exit 1
+case "$(cat /sys/class/dmi/id/product_name 2>/dev/null)" in
+  KestrelOS-Persist-Write|KestrelOS-Persist-Read) exit 0;;
+  *) exit 1;;
+esac

@@ -1,0 +1,7 @@
+#!/usr/bin/python3
+import json
+import sys
+sys.path.insert(0, '/usr/local/lib/kestrel')
+from session import session_status
+from desktop import status_module
+print(json.dumps(status_module(session_status())))

@@ -1,0 +1,10 @@
+{
+  "niri": {
+    "backup": "Open Control Center → Saving & backup → Export files & settings to export your home folder to another mounted filesystem. The export includes personal files, user settings and browser profiles; it excludes caches, Trash, installed system packages and system-wide Wi-Fi profiles. It is not a complete image of the save partition.",
+    "recovery": "Test display changes in Display & monitors; they revert after 15 seconds unless kept. Recover desktop can reset Niri settings after confirmation and preserves the previous settings in a dated folder. If the desktop cannot start, try desktop recovery in the boot menu. The safe-graphics console entry opens a temporary text console, not a graphical desktop."
+  },
+  "xfce": {
+    "backup": "Use Files to copy important documents to another drive. Include hidden configuration folders and browser profiles if you need those settings. A copy of your documents is not a complete backup of system settings or installed applications.",
+    "recovery": "Check the display and appearance tools in Control Center. If the desktop cannot start, use the troubleshooting boot entry. Back up important files before changing saved configuration."
+  }
+}
