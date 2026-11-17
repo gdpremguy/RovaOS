@@ -1,1 +1,15 @@
+#!/bin/sh
+# No passwords, saved profiles, SSID list, MAC addresses or serial numbers.
+set -u
+printf '\nRovaOS network diagnostics\n'
+uname -r
+printf '\nNetwork controller and driver:\n'
 lspci -nnk | grep -A 3 -Ei 'network controller|ethernet controller' || true
+printf '\nRadio blocks:\n'
+rfkill list
+printf '\nNetworkManager:\n'
+nmcli -f STATE,CONNECTIVITY,WIFI-HW,WIFI general
+nmcli -f DEVICE,TYPE,STATE device
+printf '\nTime and synchronisation:\n'
+timedatectl status
+printf '\nThis report does not prove Wi-Fi association or internet access.\n'
