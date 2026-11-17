@@ -42,6 +42,3 @@ Tests that need a built ISO skip until one is available.
 Original project code and artwork are [MIT licensed](LICENSE). Downloaded
 packages retain their own licences; see [third-party notices](THIRD_PARTY_NOTICES.md).
 The MIT licence does not relicense Debian, Linux, Niri or their dependencies.
-
-Publish this folder, not the parent workspace. Upload verified ISOs as separate
-release assets rather than committing them to Git.
